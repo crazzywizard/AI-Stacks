@@ -4,10 +4,12 @@ import { streamText, convertToModelMessages } from 'ai';
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages, model: requestedModel } = await req.json();
+
+  const model = requestedModel || 'google/gemini-1.5-flash';
 
   const result = streamText({
-    model: 'google/gemini-3-flash',
+    model: model,
     messages: await convertToModelMessages(messages),
     system: 'You are a helpful, premium AI assistant. Respond with clear, concise, and helpful answers.',
   });

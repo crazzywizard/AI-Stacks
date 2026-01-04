@@ -11,9 +11,22 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const AVAILABLE_MODELS = [
+  { id: 'google/gemini-2.0-flash', name: 'Gemini 2.0 Flash', icon: Sparkles },
+  { id: 'google/gemini-1.5-pro', name: 'Gemini 1.5 Pro', icon: Bot },
+  { id: 'google/gemini-1.5-flash', name: 'Gemini 1.5 Flash', icon: Bot },
+  { id: 'openai/gpt-4o', name: 'GPT-4o', icon: Sparkles },
+  { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', icon: Bot },
+  { id: 'openai/o1', name: 'OpenAI o1', icon: Sparkles },
+];
+
 export default function Chat() {
   const [inputValue, setInputValue] = useState('');
+  const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[2].id);
+  const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
+  
   const { messages, sendMessage, status, error, stop, regenerate, setMessages } = useChat();
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isLoading = status === 'submitted' || status === 'streaming';
@@ -34,36 +47,91 @@ export default function Chat() {
     setInputValue('');
     
     try {
-      sendMessage({ text: currentInput });
+      sendMessage({ text: currentInput }, { body: { model: selectedModel } });
     } catch (err) {
       console.error('Failed to send message:', err);
       setInputValue(currentInput); // Restore input on error
     }
   };
 
+  const currentModel = AVAILABLE_MODELS.find(m => m.id === selectedModel) || AVAILABLE_MODELS[2];
+
   return (
     <div className="flex flex-col h-[600px] w-full max-w-2xl mx-auto bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden font-sans">
       {/* Header */}
-      <div className="p-6 border-b border-white/10 bg-gradient-to-r from-blue-600/20 to-purple-600/20 flex items-center justify-between">
+      <div className="p-6 border-b border-white/10 bg-gradient-to-r from-blue-600/20 to-purple-600/20 flex items-center justify-between relative">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-            <Sparkles className="w-5 h-5 text-white" />
+          <div className="relative">
+            <button 
+              onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
+              className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/20 hover:scale-105 transition-transform"
+            >
+              <currentModel.icon className="w-5 h-5 text-white" />
+            </button>
+            
+            <AnimatePresence>
+              {isModelMenuOpen && (
+                <>
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setIsModelMenuOpen(false)}
+                    className="fixed inset-0 z-40"
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute top-12 left-0 w-64 bg-[#1a1c2e] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden py-2"
+                  >
+                    <div className="px-4 py-2 border-b border-white/5 mb-2">
+                      <p className="text-[10px] font-bold text-white/30 uppercase tracking-wider">Select Model</p>
+                    </div>
+                    {AVAILABLE_MODELS.map((model) => (
+                      <button
+                        key={model.id}
+                        onClick={() => {
+                          setSelectedModel(model.id);
+                          setIsModelMenuOpen(false);
+                        }}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-white/5",
+                          selectedModel === model.id ? "text-blue-400 bg-blue-400/5" : "text-white/60"
+                        )}
+                      >
+                        <model.icon className={cn("w-4 h-4", selectedModel === model.id ? "text-blue-400" : "text-white/30")} />
+                        <span className="font-medium">{model.name}</span>
+                        {selectedModel === model.id && (
+                          <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,1)]" />
+                        )}
+                      </button>
+                    ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
           <div>
             <h2 className="text-white font-semibold text-lg">AI Assistant</h2>
-            <p className="text-white/50 text-xs flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              Online & Ready
-            </p>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              <p className="text-white/50 text-xs font-medium uppercase tracking-wider">{currentModel.name}</p>
+            </div>
           </div>
         </div>
-        {isLoading && (
+        
+        {isLoading ? (
           <button 
             onClick={() => stop()}
-            className="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/50 hover:bg-white/10 transition-colors"
+            className="text-xs px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all font-medium"
           >
-            Stop generating
+            Stop
           </button>
+        ) : (
+          <div className="flex items-center gap-1 bg-white/5 rounded-full px-3 py-1 border border-white/10">
+            <span className="text-[10px] text-white/40 font-bold uppercase tracking-tighter">Ready</span>
+          </div>
         )}
       </div>
 
@@ -81,7 +149,7 @@ export default function Chat() {
               </div>
               <div>
                 <h3 className="text-white font-medium">How can I help you today?</h3>
-                <p className="text-white/40 text-sm max-w-[280px]">Ask me anything, I'm here to assist with your coding and creative projects.</p>
+                <p className="text-white/40 text-sm max-w-[280px]">Ask me anything, I'm here to assist with your projects using {currentModel.name}.</p>
               </div>
             </motion.div>
           )}
@@ -108,10 +176,6 @@ export default function Chat() {
                   ? "bg-blue-600 text-white rounded-tr-none shadow-lg shadow-blue-900/20" 
                   : "bg-white/5 border border-white/10 text-white/90 rounded-tl-none backdrop-blur-sm"
               )}>
-                {/* 
-                  In AI SDK 6.0, messages use 'parts' for structured content.
-                  We'll map over parts to render text and handle other types.
-                */}
                 {m.parts ? (
                   m.parts.map((part, i) => {
                     if (part.type === 'text') return <span key={i}>{part.text}</span>;
@@ -122,7 +186,6 @@ export default function Chat() {
                     return null;
                   })
                 ) : (
-                  // Fallback for older versions or if parts is undefined
                   (m as any).content
                 )}
               </div>
@@ -134,7 +197,7 @@ export default function Chat() {
                 <Loader2 className="w-4 h-4 text-white/40 animate-spin" />
               </div>
               <div className="bg-white/5 border border-white/10 text-white/40 p-3 rounded-2xl rounded-tl-none italic text-xs">
-                Thinking...
+                Thinking with {currentModel.name}...
               </div>
             </div>
           )}
@@ -143,7 +206,7 @@ export default function Chat() {
           <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-400 text-sm flex items-center justify-between gap-4">
             <span>Something went wrong. Please check your API key.</span>
             <button 
-              onClick={() => regenerate()}
+              onClick={() => regenerate({ body: { model: selectedModel } })}
               className="px-3 py-1 bg-red-500/20 rounded-lg hover:bg-red-500/30 transition-colors text-xs font-semibold"
             >
               Retry
@@ -159,7 +222,7 @@ export default function Chat() {
           <input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Type your message..."
+            placeholder={`Message ${currentModel.name}...`}
             className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-6 pr-14 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all shadow-inner"
             disabled={isLoading}
           />
@@ -172,7 +235,7 @@ export default function Chat() {
           </button>
         </div>
         <p className="mt-3 text-center text-[10px] text-white/20 uppercase tracking-widest font-medium">
-          Powered by Vercel AI SDK & Google Gemini
+          Powered by Vercel AI SDK & {currentModel.name.split(' ')[0]}
         </p>
       </form>
     </div>
