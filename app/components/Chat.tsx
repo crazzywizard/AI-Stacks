@@ -18,6 +18,10 @@ const AVAILABLE_MODELS = [
   { id: 'openai/gpt-4o', name: 'GPT-4o', icon: Sparkles },
   { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', icon: Bot },
   { id: 'openai/o1', name: 'OpenAI o1', icon: Sparkles },
+  { id: 'anthropic/claude-3-7-sonnet-latest', name: 'Claude 3.7 Sonnet', icon: Sparkles },
+  { id: 'anthropic/claude-3-5-sonnet-latest', name: 'Claude 3.5 Sonnet', icon: Bot },
+  { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3', icon: Bot },
+  { id: 'deepseek/deepseek-reasoner', name: 'DeepSeek R1', icon: Sparkles },
 ];
 
 export default function Chat() {
